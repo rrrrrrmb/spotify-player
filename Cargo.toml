@@ -3,7 +3,7 @@ members = ["spotify_player", "lyric_finder"]
 resolver = "2"
 
 [profile.release]
-debug = 1
+debug = 0
 
 [workspace.lints.rust]
 unsafe_code = "deny"
