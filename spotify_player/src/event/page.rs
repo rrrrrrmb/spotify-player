@@ -25,10 +25,10 @@ pub fn handle_key_sequence_for_page(
             PageType::Library => handle_command_for_library_page(command, client_pub, ui, state),
             PageType::Context => handle_command_for_context_page(command, client_pub, ui, state),
             PageType::Browse => handle_command_for_browse_page(command, client_pub, ui, state),
-            #[cfg(feature = "lyric-finder")]
-            PageType::Lyric => handle_command_for_lyric_page(command, ui),
-            PageType::Queue => handle_command_for_queue_page(command, ui),
-            PageType::CommandHelp => handle_command_for_command_help_page(command, ui),
+            // lyrics page doesn't support any commands
+            PageType::Lyrics => Ok(false),
+            PageType::Queue => Ok(handle_command_for_queue_page(command, ui)),
+            PageType::CommandHelp => Ok(handle_command_for_command_help_page(command, ui)),
         },
         Some(CommandOrAction::Action(action, ActionTarget::SelectedItem)) => match page_type {
             PageType::Search => anyhow::bail!("page search type should already be handled!"),
@@ -57,24 +57,24 @@ fn handle_action_for_library_page(
     match focus_state {
         LibraryFocusState::Playlists => window::handle_action_for_selected_item(
             action,
-            ui.search_filtered_items(&data.user_data.folder_playlists_items(folder_id))
+            &ui.search_filtered_items(&data.user_data.folder_playlists_items(folder_id))
                 .into_iter()
                 .copied()
-                .collect(),
+                .collect::<Vec<_>>(),
             &data,
             ui,
             client_pub,
         ),
         LibraryFocusState::SavedAlbums => window::handle_action_for_selected_item(
             action,
-            ui.search_filtered_items(&data.user_data.saved_albums),
+            &ui.search_filtered_items(&data.user_data.saved_albums),
             &data,
             ui,
             client_pub,
         ),
         LibraryFocusState::FollowedArtists => window::handle_action_for_selected_item(
             action,
-            ui.search_filtered_items(&data.user_data.followed_artists),
+            &ui.search_filtered_items(&data.user_data.followed_artists),
             &data,
             ui,
             client_pub,
@@ -98,28 +98,30 @@ fn handle_command_for_library_page(
             _ => anyhow::bail!("expect a library page state"),
         };
         match focus_state {
-            LibraryFocusState::Playlists => window::handle_command_for_playlist_list_window(
+            LibraryFocusState::Playlists => Ok(window::handle_command_for_playlist_list_window(
                 command,
-                ui.search_filtered_items(&data.user_data.folder_playlists_items(folder_id))
+                &ui.search_filtered_items(&data.user_data.folder_playlists_items(folder_id))
                     .into_iter()
                     .copied()
-                    .collect(),
+                    .collect::<Vec<_>>(),
                 &data,
                 ui,
-            ),
+            )),
             LibraryFocusState::SavedAlbums => window::handle_command_for_album_list_window(
                 command,
-                ui.search_filtered_items(&data.user_data.saved_albums),
+                &ui.search_filtered_items(&data.user_data.saved_albums),
                 &data,
                 ui,
                 client_pub,
             ),
-            LibraryFocusState::FollowedArtists => window::handle_command_for_artist_list_window(
-                command,
-                ui.search_filtered_items(&data.user_data.followed_artists),
-                &data,
-                ui,
-            ),
+            LibraryFocusState::FollowedArtists => {
+                Ok(window::handle_command_for_artist_list_window(
+                    command,
+                    &ui.search_filtered_items(&data.user_data.followed_artists),
+                    &data,
+                    ui,
+                ))
+            }
         }
     }
 }
@@ -171,78 +173,112 @@ fn handle_key_sequence_for_search_page(
     match focus_state {
         SearchFocusState::Input => anyhow::bail!("user's search input should be handled before"),
         SearchFocusState::Tracks => {
-            let tracks = match search_results {
-                Some(s) => s.tracks.iter().collect(),
-                None => Vec::new(),
-            };
+            let tracks = search_results
+                .map(|s| s.tracks.iter().collect::<Vec<_>>())
+                .unwrap_or_default();
 
             match found_keymap {
                 CommandOrAction::Command(command) => window::handle_command_for_track_list_window(
-                    command, client_pub, tracks, &data, ui,
+                    command, client_pub, &tracks, &data, ui,
                 ),
                 CommandOrAction::Action(action, ActionTarget::SelectedItem) => {
-                    window::handle_action_for_selected_item(action, tracks, &data, ui, client_pub)
+                    window::handle_action_for_selected_item(action, &tracks, &data, ui, client_pub)
                 }
                 CommandOrAction::Action(..) => Ok(false),
             }
         }
         SearchFocusState::Artists => {
             let artists = search_results
-                .map(|s| s.artists.iter().collect())
+                .map(|s| s.artists.iter().collect::<Vec<_>>())
                 .unwrap_or_default();
 
             match found_keymap {
-                CommandOrAction::Command(command) => {
-                    window::handle_command_for_artist_list_window(command, artists, &data, ui)
-                }
+                CommandOrAction::Command(command) => Ok(
+                    window::handle_command_for_artist_list_window(command, &artists, &data, ui),
+                ),
                 CommandOrAction::Action(action, ActionTarget::SelectedItem) => {
-                    window::handle_action_for_selected_item(action, artists, &data, ui, client_pub)
+                    window::handle_action_for_selected_item(action, &artists, &data, ui, client_pub)
                 }
                 CommandOrAction::Action(..) => Ok(false),
             }
         }
         SearchFocusState::Albums => {
             let albums = search_results
-                .map(|s| s.albums.iter().collect())
+                .map(|s| s.albums.iter().collect::<Vec<_>>())
                 .unwrap_or_default();
 
             match found_keymap {
                 CommandOrAction::Command(command) => window::handle_command_for_album_list_window(
-                    command, albums, &data, ui, client_pub,
+                    command, &albums, &data, ui, client_pub,
                 ),
                 CommandOrAction::Action(action, ActionTarget::SelectedItem) => {
-                    window::handle_action_for_selected_item(action, albums, &data, ui, client_pub)
+                    window::handle_action_for_selected_item(action, &albums, &data, ui, client_pub)
                 }
                 CommandOrAction::Action(..) => Ok(false),
             }
         }
         SearchFocusState::Playlists => {
-            let playlists: Vec<PlaylistFolderItem> = search_results
+            let playlists = search_results
                 .map(|s| {
                     s.playlists
                         .iter()
                         .map(|p| PlaylistFolderItem::Playlist(p.clone()))
-                        .collect()
+                        .collect::<Vec<_>>()
                 })
                 .unwrap_or_default();
-            let playlist_refs = playlists.iter().collect();
+            let playlist_refs = playlists.iter().collect::<Vec<_>>();
 
             match found_keymap {
                 CommandOrAction::Command(command) => {
-                    window::handle_command_for_playlist_list_window(
+                    Ok(window::handle_command_for_playlist_list_window(
                         command,
-                        playlist_refs,
+                        &playlist_refs,
                         &data,
                         ui,
-                    )
+                    ))
                 }
                 CommandOrAction::Action(action, ActionTarget::SelectedItem) => {
                     window::handle_action_for_selected_item(
                         action,
-                        playlist_refs,
+                        &playlist_refs,
                         &data,
                         ui,
                         client_pub,
+                    )
+                }
+                CommandOrAction::Action(..) => Ok(false),
+            }
+        }
+        SearchFocusState::Shows => {
+            let shows = search_results
+                .map(|s| s.shows.iter().collect::<Vec<_>>())
+                .unwrap_or_default();
+
+            match found_keymap {
+                CommandOrAction::Command(command) => Ok(
+                    window::handle_command_for_show_list_window(command, &shows, &data, ui),
+                ),
+                CommandOrAction::Action(action, ActionTarget::SelectedItem) => {
+                    window::handle_action_for_selected_item(action, &shows, &data, ui, client_pub)
+                }
+                CommandOrAction::Action(..) => Ok(false),
+            }
+        }
+        SearchFocusState::Episodes => {
+            let episodes = match search_results {
+                Some(s) => s.episodes.iter().collect(),
+                None => Vec::new(),
+            };
+
+            match found_keymap {
+                CommandOrAction::Command(command) => {
+                    window::handle_command_for_episode_list_window(
+                        command, client_pub, &episodes, &data, ui,
+                    )
+                }
+                CommandOrAction::Action(action, ActionTarget::SelectedItem) => {
+                    window::handle_action_for_selected_item(
+                        action, &episodes, &data, ui, client_pub,
                     )
                 }
                 CommandOrAction::Action(..) => Ok(false),
@@ -380,54 +416,24 @@ fn handle_command_for_browse_page(
     Ok(true)
 }
 
-#[cfg(feature = "lyric-finder")]
-#[allow(clippy::unnecessary_wraps)] // match return type
-fn handle_command_for_lyric_page(command: Command, ui: &mut UIStateGuard) -> Result<bool> {
-    let scroll_offset = match ui.current_page() {
-        PageState::Lyric { scroll_offset, .. } => *scroll_offset,
-        _ => return Ok(false),
-    };
-    Ok(handle_navigation_command(
-        command,
-        ui.current_page_mut(),
-        scroll_offset,
-        10000,
-    ))
-}
-
-#[allow(clippy::unnecessary_wraps)] // for consistency
-fn handle_command_for_queue_page(
-    command: Command,
-    ui: &mut UIStateGuard,
-) -> Result<bool, anyhow::Error> {
+fn handle_command_for_queue_page(command: Command, ui: &mut UIStateGuard) -> bool {
     let scroll_offset = match ui.current_page() {
         PageState::Queue { scroll_offset } => *scroll_offset,
-        _ => return Ok(false),
+        _ => return false,
     };
-    Ok(handle_navigation_command(
-        command,
-        ui.current_page_mut(),
-        scroll_offset,
-        10000,
-    ))
+    handle_navigation_command(command, ui.current_page_mut(), scroll_offset, 10000)
 }
 
-#[allow(clippy::unnecessary_wraps)] // for consistency
-fn handle_command_for_command_help_page(command: Command, ui: &mut UIStateGuard) -> Result<bool> {
+fn handle_command_for_command_help_page(command: Command, ui: &mut UIStateGuard) -> bool {
     let scroll_offset = match ui.current_page() {
         PageState::CommandHelp { scroll_offset } => *scroll_offset,
-        _ => return Ok(false),
+        _ => return false,
     };
     if command == Command::Search {
         ui.new_search_popup();
-        return Ok(true);
+        return true;
     }
-    Ok(handle_navigation_command(
-        command,
-        ui.current_page_mut(),
-        scroll_offset,
-        10000,
-    ))
+    handle_navigation_command(command, ui.current_page_mut(), scroll_offset, 10000)
 }
 
 pub fn handle_navigation_command(

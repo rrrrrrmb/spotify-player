@@ -46,6 +46,7 @@ impl Configs {
 }
 
 #[derive(Debug, Deserialize, Serialize, ConfigParse)]
+#[allow(clippy::struct_excessive_bools)]
 /// Application configurations
 pub struct AppConfig {
     pub theme: String,
@@ -113,6 +114,8 @@ pub struct AppConfig {
     pub notify_streaming_only: bool,
 
     pub seek_duration_secs: u16,
+
+    pub sort_artist_albums_by_type: bool,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -323,6 +326,8 @@ impl Default for AppConfig {
             notify_streaming_only: false,
 
             seek_duration_secs: 5,
+
+            sort_artist_albums_by_type: false,
         }
     }
 }
@@ -419,7 +424,7 @@ impl AppConfig {
     /// Returns stdout of `client_id_command` if set, otherwise it returns the the value of `client_id`
     pub fn get_client_id(&self) -> Result<String> {
         match self.client_id_command {
-            Some(ref cmd) => cmd.execute(None),
+            Some(ref cmd) => cmd.execute(None).map(|out| out.trim().into()),
             None => Ok(self.client_id.clone()),
         }
     }
@@ -441,7 +446,6 @@ pub fn get_cache_folder_path() -> Result<PathBuf> {
     }
 }
 
-#[inline(always)]
 pub fn get_config() -> &'static Configs {
     CONFIGS.get().expect("configs is already initialized")
 }

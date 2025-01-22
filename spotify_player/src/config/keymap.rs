@@ -65,11 +65,11 @@ impl Default for KeymapConfig {
                 },
                 Keymap {
                     key_sequence: "+".into(),
-                    command: Command::VolumeUp,
+                    command: Command::VolumeChange { offset: 5 },
                 },
                 Keymap {
                     key_sequence: "-".into(),
-                    command: Command::VolumeDown,
+                    command: Command::VolumeChange { offset: -5 },
                 },
                 Keymap {
                     key_sequence: "_".into(),
@@ -168,15 +168,13 @@ impl Default for KeymapConfig {
                     key_sequence: "g y".into(),
                     command: Command::LikedTrackPage,
                 },
-                #[cfg(feature = "lyric-finder")]
                 Keymap {
                     key_sequence: "g L".into(),
-                    command: Command::LyricPage,
+                    command: Command::LyricsPage,
                 },
-                #[cfg(feature = "lyric-finder")]
                 Keymap {
                     key_sequence: "l".into(),
-                    command: Command::LyricPage,
+                    command: Command::LyricsPage,
                 },
                 Keymap {
                     key_sequence: "g l".into(),

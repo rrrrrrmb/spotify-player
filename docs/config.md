@@ -6,6 +6,7 @@
   - [Notes](#notes)
   - [Media control](#media-control)
   - [Player event hook command](#player-event-hook-command)
+  - [Client id command](#client-id-command)
   - [Device configurations](#device-configurations)
   - [Layout configurations](#layout-configurations)
 - [Themes](#themes)
@@ -54,6 +55,7 @@ All configuration files should be placed inside the application's configuration 
 | `cover_img_length`                | the length of the cover image (`image` feature only)                                     | `9`                                                     |
 | `cover_img_scale`                 | the scale of the cover image (`image` feature only)                                      | `1.0`                                                   |
 | `seek_duration_secs`              | the duration (in seconds) to seek when using `SeekForward` and `SeekBackward` commands   | `5`                                                     |
+| `sort_artist_albums_by_type`      | sort albums on artist's pages by type, i.e. album or single                              | `false`                                                 |
 
 ### Notes
 
@@ -121,6 +123,17 @@ case "$1" in
     "EndOfTrack") echo "command: $1, track_id: $2" >> /tmp/log.txt ;;
 esac
 ```
+
+### Client id command
+
+If you prefer not to include your own `client_id` directly in your configuration, you can retrieve it at runtime using the `client_id_command` option.
+
+If specified, `client_id_command` should be an object with two fields `command` and `args`, just like `player_event_hook_command`.
+For example to read your client_id from a file your could use `client_id_command = { command = "cat", args = ["/path/to/file"] }`
+
+> [!NOTE]
+> When passing a path as an argument, always use the full path.
+> The `~` symbol will not automatically expand to your home directory.
 
 ### Device configurations
 
@@ -231,6 +244,7 @@ To define application's component styles, the user can specify any of the below 
 - `selection`
 - `secondary_row`
 - `like`
+- `lyrics_played`
 
 A field in `component_style` is a struct with three **optional** fields: `fg` (foreground), `bg` (background) and `modifiers` (terminal effects):
 
@@ -261,7 +275,9 @@ current_playing = { fg = "Green", modifiers = ["Bold"] }
 page_desc = { fg = "Cyan", modifiers = ["Bold"] }
 playlist_desc = { fg = "BrightBlack", modifiers = ["Dim"] }
 table_header = { fg = "Blue" }
-selection = { modifiers = ["Bold", "Reversed"] }
+secondary_row = {}
+like = {]
+lyrics_played = { modifiers = ["Dim"] }
 ```
 
 ## Keymaps
@@ -284,6 +300,9 @@ key_sequence = "M-enter"
 [[keymaps]]
 command = "None"
 key_sequence = "q"
+[[keymaps]]
+command = { VolumeChange = { offset = 1 } }
+key_sequence = "-"
 ```
 
 ## Actions

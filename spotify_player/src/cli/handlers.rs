@@ -46,8 +46,7 @@ fn get_id_or_name(args: &ArgMatches) -> IdOrName {
     }
 }
 
-#[allow(clippy::unnecessary_wraps)] // we need this to match the other functions return type
-fn handle_get_subcommand(args: &ArgMatches) -> Result<Request> {
+fn handle_get_subcommand(args: &ArgMatches) -> Request {
     let (cmd, args) = args.subcommand().expect("playback subcommand is required");
 
     let request = match cmd {
@@ -69,13 +68,14 @@ fn handle_get_subcommand(args: &ArgMatches) -> Result<Request> {
         _ => unreachable!(),
     };
 
-    Ok(request)
+    request
 }
 
 fn handle_playback_subcommand(args: &ArgMatches) -> Result<Request> {
     let (cmd, args) = args.subcommand().expect("playback subcommand is required");
     let command = match cmd {
         "start" => match args.subcommand() {
+            Some(("track", args)) => Command::StartTrack(get_id_or_name(args)),
             Some(("context", args)) => {
                 let context_type = args
                     .get_one::<ContextType>("context_type")
@@ -181,8 +181,7 @@ pub fn handle_cli_subcommand(cmd: &str, args: &ArgMatches) -> Result<()> {
     match cmd {
         "authenticate" => {
             let auth_config = AuthConfig::new(configs)?;
-            let rt = tokio::runtime::Runtime::new()?;
-            rt.block_on(crate::auth::get_creds(&auth_config, true, false))?;
+            crate::auth::get_creds(&auth_config, true, false)?;
             std::process::exit(0);
         }
         "generate" => {
@@ -202,7 +201,7 @@ pub fn handle_cli_subcommand(cmd: &str, args: &ArgMatches) -> Result<()> {
 
     // construct a socket request based on the CLI command and its arguments
     let request = match cmd {
-        "get" => handle_get_subcommand(args)?,
+        "get" => handle_get_subcommand(args),
         "playback" => handle_playback_subcommand(args)?,
         "playlist" => handle_playlist_subcommand(args)?,
         "connect" => Request::Connect(get_id_or_name(args)),
