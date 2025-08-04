@@ -53,6 +53,7 @@ pub enum Command {
     ShowActionsOnSelectedItem,
     ShowActionsOnCurrentTrack,
     AddSelectedItemToQueue,
+    JumpToHighlightTrackInContext,
 
     BrowseUserPlaylists,
     BrowseUserFollowedArtists,
@@ -75,6 +76,9 @@ pub enum Command {
     SortTrackByDuration,
     SortTrackByAddedDate,
     ReverseTrackOrder,
+
+    SortLibraryAlphabetically,
+    SortLibraryByRecent,
 
     MovePlaylistItemUp,
     MovePlaylistItemDown,
@@ -305,15 +309,15 @@ impl Command {
             Self::ClosePopup => "close a popup",
             #[cfg(feature = "streaming")]
             Self::RestartIntegratedClient => "restart the integrated client",
-            Self::SelectNextOrScrollDown => "select the next item in a list/table or scroll down",
+            Self::SelectNextOrScrollDown => "select the next item in a list/table or scroll down (supports vim-style count: 5j)",
             Self::SelectPreviousOrScrollUp => {
-                "select the previous item in a list/table or scroll up"
+                "select the previous item in a list/table or scroll up (supports vim-style count: 10k)"
             }
             Self::PageSelectNextOrScrollDown => {
-                "select the next page item in a list/table or scroll a page down"
+                "select the next page item in a list/table or scroll a page down (supports vim-style count: 3C-f)"
             }
             Self::PageSelectPreviousOrScrollUp => {
-                "select the previous page item in a list/table or scroll a page up"
+                "select the previous page item in a list/table or scroll a page up (supports vim-style count: 2C-b)"
             }
             Self::SelectFirstOrScrollToTop => {
                 "select the first item in a list/table or scroll to the top"
@@ -327,6 +331,7 @@ impl Command {
             Self::ShowActionsOnSelectedItem => "open a popup showing actions on a selected item",
             Self::ShowActionsOnCurrentTrack => "open a popup showing actions on the current track",
             Self::AddSelectedItemToQueue => "add the selected item to queue",
+            Self::JumpToHighlightTrackInContext => "jump to the currently highlighted search result in the context",
             Self::FocusNextWindow => "focus the next focusable window (if any)",
             Self::FocusPreviousWindow => "focus the previous focusable window (if any)",
             Self::SwitchTheme => "open a popup for switching theme",
@@ -353,6 +358,10 @@ impl Command {
             Self::SortTrackByDuration => "sort the track table (if any) by track's duration",
             Self::SortTrackByAddedDate => "sort the track table (if any) by track's added date",
             Self::ReverseTrackOrder => "reverse the order of the track table (if any)",
+            Self::SortLibraryAlphabetically => "sort the library alphabetically",
+            Self::SortLibraryByRecent => {
+                "sort the library (playlists and albums) by recently added items"
+            }
             Self::MovePlaylistItemUp => "move playlist item up one position",
             Self::MovePlaylistItemDown => "move playlist item down one position",
             Self::CreatePlaylist => "create a new playlist",

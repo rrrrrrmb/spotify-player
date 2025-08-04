@@ -21,9 +21,10 @@ use crate::{
 
 use crate::utils::map_join;
 use anyhow::{Context as _, Result};
+use crossterm::event::KeyCode;
 
 use clipboard::{execute_copy_command, get_clipboard_content};
-use tui::widgets::ListState;
+use ratatui::widgets::ListState;
 
 mod clipboard;
 mod page;
@@ -109,7 +110,10 @@ fn handle_key_event(
         key_sequence = KeySequence { keys: vec![key] };
     }
 
-    tracing::debug!("Handling key event: {event:?}, current key sequence: {key_sequence:?}");
+    tracing::debug!(
+        "Handling key event: {event:?}, current key sequence: {key_sequence:?}, count prefix: {:?}",
+        ui.count_prefix
+    );
     let handled = {
         if ui.popup.is_none() {
             page::handle_key_sequence_for_page(&key_sequence, client_pub, state, &mut ui)?
@@ -133,12 +137,33 @@ fn handle_key_event(
         }
     };
 
-    // if handled, clear the key sequence
+    // if handled, clear the key sequence and count prefix
     // otherwise, the current key sequence can be a prefix of a command's shortcut
     if handled {
         ui.input_key_sequence.keys = vec![];
+        ui.count_prefix = None;
     } else {
-        ui.input_key_sequence = key_sequence;
+        // update the count prefix if the key is a digit
+        match key {
+            Key::None(KeyCode::Char(c)) if c.is_ascii_digit() => {
+                let digit = c.to_digit(10).unwrap() as usize;
+                ui.input_key_sequence.keys = vec![];
+                ui.count_prefix = match ui.count_prefix {
+                    Some(count) => Some(count * 10 + digit),
+                    None => {
+                        if digit > 0 {
+                            Some(digit)
+                        } else {
+                            None
+                        }
+                    }
+                };
+            }
+            _ => {
+                ui.input_key_sequence = key_sequence;
+                ui.count_prefix = None;
+            }
+        }
     }
     Ok(())
 }
@@ -509,7 +534,7 @@ fn handle_global_action(
                 }
             }
         }
-    };
+    }
 
     Ok(false)
 }

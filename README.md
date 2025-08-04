@@ -69,6 +69,15 @@ A Spotify Premium account is **required**.
     ```shell
     sudo apt install libssl-dev libasound2-dev libdbus-1-dev
     ```
+  - On RHEL/Fedora based systems, run the below command to install application's dependencies :
+
+    ```shell
+    sudo dnf install openssl-devel alsa-lib-devel dbus-devel
+    ```
+    or if you're using `yum`:
+    ```shell
+    sudo yum install openssl-devel alsa-lib-devel dbus-devel
+    ```
 
 ### Binaries
 
@@ -88,11 +97,12 @@ Run `scoop install spotify-player` to install the application.
 
 Run `cargo install spotify_player --locked` to install the application from [crates.io](https://crates.io/crates/spotify_player).
 
-### AUR
+### Arch Linux
 
-Run `yay -S spotify-player` to install the application as an AUR package.
+Run `pacman -S spotify-player` to install the application.
 
-Alternatively, run `yay -S spotify-player-full` to install an AUR package compiled with full feature support and Pulseaudio/Pipewire instead of rodio.
+**Note**: Defaults to PulseAudio / Pipewire audio backend. For a different one, please consider modifying the [official PKGBUILD](https://gitlab.archlinux.org/archlinux/packaging/packages/spotify-player) and rebuilding it manually. See [Audio Backends](#audio-backend) for a list of options.
+
 
 ### Void Linux
 
@@ -112,6 +122,12 @@ Building from source,
 cd /usr/pkgsrc/audio/spotify-player
 make install
 ```
+
+### NixOS
+
+[spotify-player](https://search.nixos.org/packages?channel=unstable&show=spotify-player&from=0&size=50&sort=relevance&type=packages&query=spotify-player) is available as a Nix package and can be installed via `nix-shell -p spotify-player` or as part of your system configuration.
+
+If you want to build the source locally you can run `nix-shell` in the root of a checkout of the source code. The provided `shell.nix` file will install the build prerequisites.
 
 ### Docker
 
@@ -312,63 +328,66 @@ To go to the shortcut help page, press `?` or `C-h` (default shortcuts for `Open
 
 List of supported commands:
 
-| Command                        | Description                                                       | Default shortcuts  |
-| ------------------------------ | ----------------------------------------------------------------- | ------------------ |
-| `NextTrack`                    | next track                                                        | `n`                |
-| `PreviousTrack`                | previous track                                                    | `p`                |
-| `ResumePause`                  | resume/pause based on the current playback                        | `space`            |
-| `PlayRandom`                   | play a random track in the current context                        | `.`                |
-| `Repeat`                       | cycle the repeat mode                                             | `C-r`              |
-| `ToggleFakeTrackRepeatMode`    | toggle fake track repeat mode                                     | `M-r`              |
-| `Shuffle`                      | toggle the shuffle mode                                           | `C-s`              |
-| `VolumeChange`                 | change playback volume by an offset (default shortcuts use 5%)    | `+`, `-`           |
-| `Mute`                         | toggle playback volume between 0% and previous level              | `_`                |
-| `SeekForward`                  | seek forward by 5s                                                | `>`                |
-| `SeekBackward`                 | seek backward by 5s                                               | `<`                |
-| `Quit`                         | quit the application                                              | `C-c`, `q`         |
-| `ClosePopup`                   | close a popup                                                     | `esc`              |
-| `SelectNextOrScrollDown`       | select the next item in a list/table or scroll down               | `j`, `C-n`, `down` |
-| `SelectPreviousOrScrollUp`     | select the previous item in a list/table or scroll up             | `k`, `C-p`, `up`   |
-| `PageSelectNextOrScrollDown`   | select the next page item in a list/table or scroll a page down   | `page_down`, `C-f` |
-| `PageSelectPreviousOrScrollUp` | select the previous page item in a list/table or scroll a page up | `page_up`, `C-b`   |
-| `SelectFirstOrScrollToTop`     | select the first item in a list/table or scroll to the top        | `g g`, `home`      |
-| `SelectLastOrScrollToBottom`   | select the last item in a list/table or scroll to the bottom      | `G`, `end`         |
-| `ChooseSelected`               | choose the selected item                                          | `enter`            |
-| `RefreshPlayback`              | manually refresh the current playback                             | `r`                |
-| `RestartIntegratedClient`      | restart the integrated client (`streaming` feature only)          | `R`                |
-| `ShowActionsOnSelectedItem`    | open a popup showing actions on a selected item                   | `g a`, `C-space`   |
-| `ShowActionsOnCurrentTrack`    | open a popup showing actions on the current track                 | `a`                |
-| `AddSelectedItemToQueue`       | add the selected item to queue                                    | `Z`, `C-z`         |
-| `FocusNextWindow`              | focus the next focusable window (if any)                          | `tab`              |
-| `FocusPreviousWindow`          | focus the previous focusable window (if any)                      | `backtab`          |
-| `SwitchTheme`                  | open a popup for switching theme                                  | `T`                |
-| `SwitchDevice`                 | open a popup for switching device                                 | `D`                |
-| `Search`                       | open a popup for searching in the current page                    | `/`                |
-| `BrowseUserPlaylists`          | open a popup for browsing user's playlists                        | `u p`              |
-| `BrowseUserFollowedArtists`    | open a popup for browsing user's followed artists                 | `u a`              |
-| `BrowseUserSavedAlbums`        | open a popup for browsing user's saved albums                     | `u A`              |
-| `CurrentlyPlayingContextPage`  | go to the currently playing context page                          | `g space`          |
-| `TopTrackPage`                 | go to the user top track page                                     | `g t`              |
-| `RecentlyPlayedTrackPage`      | go to the user recently played track page                         | `g r`              |
-| `LikedTrackPage`               | go to the user liked track page                                   | `g y`              |
-| `LyricsPage`                   | go to the lyrics page of the current track                        | `g L`, `l`         |
-| `LibraryPage`                  | go to the user library page                                       | `g l`              |
-| `SearchPage`                   | go to the search page                                             | `g s`              |
-| `BrowsePage`                   | go to the browse page                                             | `g b`              |
-| `Queue`                        | go to the queue page                                              | `z`                |
-| `OpenCommandHelp`              | go to the command help page                                       | `?`, `C-h`         |
-| `PreviousPage`                 | go to the previous page                                           | `backspace`, `C-q` |
-| `OpenSpotifyLinkFromClipboard` | open a Spotify link from clipboard                                | `O`                |
-| `SortTrackByTitle`             | sort the track table (if any) by track's title                    | `s t`              |
-| `SortTrackByArtists`           | sort the track table (if any) by track's artists                  | `s a`              |
-| `SortTrackByAlbum`             | sort the track table (if any) by track's album                    | `s A`              |
-| `SortTrackByAddedDate`         | sort the track table (if any) by track's added date               | `s D`              |
-| `SortTrackByDuration`          | sort the track table (if any) by track's duration                 | `s d`              |
-| `ReverseOrder`                 | reverse the order of the track table (if any)                     | `s r`              |
-| `MovePlaylistItemUp`           | move playlist item up one position                                | `C-k`              |
-| `MovePlaylistItemDown`         | move playlist item down one position                              | `C-j`              |
-| `CreatePlaylist`               | create a new playlist                                             | `N`                |
-| `JumpToCurrentTrackInContext`  | jump to the current track in the context                          | `g c`              |
+| Command                        | Description                                                                                        | Default shortcuts  |
+| ------------------------------ | -------------------------------------------------------------------------------------------------- | ------------------ |
+| `NextTrack`                    | next track                                                                                         | `n`                |
+| `PreviousTrack`                | previous track                                                                                     | `p`                |
+| `ResumePause`                  | resume/pause based on the current playback                                                         | `space`            |
+| `PlayRandom`                   | play a random track in the current context                                                         | `.`                |
+| `Repeat`                       | cycle the repeat mode                                                                              | `C-r`              |
+| `ToggleFakeTrackRepeatMode`    | toggle fake track repeat mode                                                                      | `M-r`              |
+| `Shuffle`                      | toggle the shuffle mode                                                                            | `C-s`              |
+| `VolumeChange`                 | change playback volume by an offset (default shortcuts use 5%)                                     | `+`, `-`           |
+| `Mute`                         | toggle playback volume between 0% and previous level                                               | `_`                |
+| `SeekForward`                  | seek forward by 5s                                                                                 | `>`                |
+| `SeekBackward`                 | seek backward by 5s                                                                                | `<`                |
+| `Quit`                         | quit the application                                                                               | `C-c`, `q`         |
+| `ClosePopup`                   | close a popup                                                                                      | `esc`              |
+| `SelectNextOrScrollDown`       | select the next item in a list/table or scroll down (supports vim-style count: 5j)                 | `j`, `C-n`, `down` |
+| `SelectPreviousOrScrollUp`     | select the previous item in a list/table or scroll up (supports vim-style count: 10k)              | `k`, `C-p`, `up`   |
+| `PageSelectNextOrScrollDown`   | select the next page item in a list/table or scroll a page down (supports vim-style count: 3C-f)   | `page_down`, `C-f` |
+| `PageSelectPreviousOrScrollUp` | select the previous page item in a list/table or scroll a page up (supports vim-style count: 2C-b) | `page_up`, `C-b`   |
+| `SelectFirstOrScrollToTop`     | select the first item in a list/table or scroll to the top                                         | `g g`, `home`      |
+| `SelectLastOrScrollToBottom`   | select the last item in a list/table or scroll to the bottom                                       | `G`, `end`         |
+| `ChooseSelected`               | choose the selected item                                                                           | `enter`            |
+| `RefreshPlayback`              | manually refresh the current playback                                                              | `r`                |
+| `RestartIntegratedClient`      | restart the integrated client (`streaming` feature only)                                           | `R`                |
+| `ShowActionsOnSelectedItem`    | open a popup showing actions on a selected item                                                    | `g a`, `C-space`   |
+| `ShowActionsOnCurrentTrack`    | open a popup showing actions on the current track                                                  | `a`                |
+| `AddSelectedItemToQueue`       | add the selected item to queue                                                                     | `Z`, `C-z`         |
+| `FocusNextWindow`              | focus the next focusable window (if any)                                                           | `tab`              |
+| `FocusPreviousWindow`          | focus the previous focusable window (if any)                                                       | `backtab`          |
+| `SwitchTheme`                  | open a popup for switching theme                                                                   | `T`                |
+| `SwitchDevice`                 | open a popup for switching device                                                                  | `D`                |
+| `Search`                       | open a popup for searching in the current page                                                     | `/`                |
+| `BrowseUserPlaylists`          | open a popup for browsing user's playlists                                                         | `u p`              |
+| `BrowseUserFollowedArtists`    | open a popup for browsing user's followed artists                                                  | `u a`              |
+| `BrowseUserSavedAlbums`        | open a popup for browsing user's saved albums                                                      | `u A`              |
+| `CurrentlyPlayingContextPage`  | go to the currently playing context page                                                           | `g space`          |
+| `TopTrackPage`                 | go to the user top track page                                                                      | `g t`              |
+| `RecentlyPlayedTrackPage`      | go to the user recently played track page                                                          | `g r`              |
+| `LikedTrackPage`               | go to the user liked track page                                                                    | `g y`              |
+| `LyricsPage`                   | go to the lyrics page of the current track                                                         | `g L`, `l`         |
+| `LibraryPage`                  | go to the user library page                                                                        | `g l`              |
+| `SearchPage`                   | go to the search page                                                                              | `g s`              |
+| `BrowsePage`                   | go to the browse page                                                                              | `g b`              |
+| `Queue`                        | go to the queue page                                                                               | `z`                |
+| `OpenCommandHelp`              | go to the command help page                                                                        | `?`, `C-h`         |
+| `PreviousPage`                 | go to the previous page                                                                            | `backspace`, `C-q` |
+| `OpenSpotifyLinkFromClipboard` | open a Spotify link from clipboard                                                                 | `O`                |
+| `SortTrackByTitle`             | sort the track table (if any) by track's title                                                     | `s t`              |
+| `SortTrackByArtists`           | sort the track table (if any) by track's artists                                                   | `s a`              |
+| `SortTrackByAlbum`             | sort the track table (if any) by track's album                                                     | `s A`              |
+| `SortTrackByAddedDate`         | sort the track table (if any) by track's added date                                                | `s D`              |
+| `SortTrackByDuration`          | sort the track table (if any) by track's duration                                                  | `s d`              |
+| `SortLibraryAlphabetically`    | sort the library alphabetically                                                                    | `s l a`            |
+| `SortLibraryByRecent`          | sort the library (playlists and albums) by recently added items                                    | `s l r`            |
+| `ReverseOrder`                 | reverse the order of the track table (if any)                                                      | `s r`              |
+| `MovePlaylistItemUp`           | move playlist item up one position                                                                 | `C-k`              |
+| `MovePlaylistItemDown`         | move playlist item down one position                                                               | `C-j`              |
+| `CreatePlaylist`               | create a new playlist                                                                              | `N`                |
+| `JumpToCurrentTrackInContext`  | jump to the current track in the context                                                           | `g c`              |
+| `JumpToHighlightTrackInContext`| jump to the currently highlighted search result in the context                                     | `C-g`              |
 
 To add new shortcuts or modify the default shortcuts, please refer to the [keymaps section](docs/config.md#keymaps) in the configuration documentation.
 
@@ -424,4 +443,4 @@ The application stores logs inside the `$APP_CACHE_FOLDER/spotify-player-*.log` 
 
 ## Acknowledgement
 
-`spotify_player` is written in [Rust](https://www.rust-lang.org) and is built on top of awesome libraries such as [tui-rs](https://github.com/fdehau/tui-rs), [rspotify](https://github.com/ramsayleung/rspotify), [librespot](https://github.com/librespot-org/librespot), and [many more](spotify_player/Cargo.toml). It's highly inspired by [spotify-tui](https://github.com/Rigellute/spotify-tui) and [ncspot](https://github.com/hrkfdn/ncspot).
+`spotify_player` is written in [Rust](https://www.rust-lang.org) and is built on top of awesome libraries such as [ratatui](https://github.com/ratatui/ratatui), [rspotify](https://github.com/ramsayleung/rspotify), [librespot](https://github.com/librespot-org/librespot), and [many more](spotify_player/Cargo.toml). It's highly inspired by [spotify-tui](https://github.com/Rigellute/spotify-tui) and [ncspot](https://github.com/hrkfdn/ncspot).

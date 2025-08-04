@@ -8,7 +8,7 @@ use crate::{
     },
 };
 use anyhow::{Context as AnyhowContext, Result};
-use tui::{
+use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::{Modifier, Style},
     text::{Line, Span, Text},
@@ -22,13 +22,13 @@ use tui::{
 #[cfg(feature = "image")]
 use crate::state::ImageRenderInfo;
 
-type Terminal = tui::Terminal<tui::backend::CrosstermBackend<std::io::Stdout>>;
+type Terminal = ratatui::Terminal<ratatui::backend::CrosstermBackend<std::io::Stdout>>;
 
 mod page;
 mod playback;
 mod popup;
 pub mod single_line_input;
-mod utils;
+pub mod utils;
 
 /// Run the application UI
 pub fn run(state: &SharedState) -> Result<()> {
@@ -82,8 +82,8 @@ fn init_ui() -> Result<Terminal> {
         crossterm::terminal::EnterAlternateScreen,
         crossterm::event::EnableMouseCapture
     )?;
-    let backend = tui::backend::CrosstermBackend::new(stdout);
-    let mut terminal = tui::Terminal::new(backend)?;
+    let backend = ratatui::backend::CrosstermBackend::new(stdout);
+    let mut terminal = ratatui::Terminal::new(backend)?;
     terminal.clear()?;
     Ok(terminal)
 }

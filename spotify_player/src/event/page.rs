@@ -90,15 +90,75 @@ fn handle_command_for_library_page(
 ) -> Result<bool> {
     if command == Command::Search {
         ui.new_search_popup();
-        Ok(true)
-    } else {
-        let data = state.data.read();
-        let (focus_state, folder_id) = match ui.current_page() {
-            PageState::Library { state } => (state.focus, state.playlist_folder_id),
-            _ => anyhow::bail!("expect a library page state"),
-        };
-        match focus_state {
-            LibraryFocusState::Playlists => Ok(window::handle_command_for_playlist_list_window(
+        return Ok(true);
+    }
+
+    let (focus_state, folder_id) = match ui.current_page() {
+        PageState::Library { state } => (state.focus, state.playlist_folder_id),
+        _ => anyhow::bail!("expect a library page state"),
+    };
+
+    if command == Command::SortLibraryAlphabetically {
+        let mut data = state.data.write();
+
+        // Sort playlists alphabetically, keeping folders on top
+        data.user_data.playlists.sort_by(|a, b| match (a, b) {
+            (PlaylistFolderItem::Folder(_), PlaylistFolderItem::Playlist(_)) => {
+                std::cmp::Ordering::Less
+            }
+            (PlaylistFolderItem::Playlist(_), PlaylistFolderItem::Folder(_)) => {
+                std::cmp::Ordering::Greater
+            }
+            _ => a
+                .to_string()
+                .to_lowercase()
+                .cmp(&b.to_string().to_lowercase()),
+        });
+
+        // Sort albums alphabetically
+        data.user_data
+            .saved_albums
+            .sort_by(|x, y| x.name.to_lowercase().cmp(&y.name.to_lowercase()));
+
+        // Sort artists alphabetically
+        data.user_data
+            .followed_artists
+            .sort_by(|x, y| x.name.to_lowercase().cmp(&y.name.to_lowercase()));
+    }
+
+    if command == Command::SortLibraryByRecent {
+        let mut data = state.data.write();
+
+        // Sort playlists by `current_folder_id` and then by `snapshot_id`
+        data.user_data.playlists.sort_by(|a, b| {
+            match (a, b) {
+                (PlaylistFolderItem::Playlist(p1), PlaylistFolderItem::Playlist(p2)) => {
+                    if p1.current_folder_id == p2.current_folder_id {
+                        p1.snapshot_id.cmp(&p2.snapshot_id)
+                    } else {
+                        p1.current_folder_id.cmp(&p2.current_folder_id)
+                    }
+                }
+                (PlaylistFolderItem::Folder(_), PlaylistFolderItem::Playlist(_)) => {
+                    std::cmp::Ordering::Less
+                }
+                (PlaylistFolderItem::Playlist(_), PlaylistFolderItem::Folder(_)) => {
+                    std::cmp::Ordering::Greater
+                }
+                _ => std::cmp::Ordering::Equal, // Keep folders in place
+            }
+        });
+
+        // Sort albums by recent addition
+        data.user_data
+            .saved_albums
+            .sort_by(|a, b| b.added_at.cmp(&a.added_at));
+    }
+
+    match focus_state {
+        LibraryFocusState::Playlists => {
+            let data = state.data.read();
+            Ok(window::handle_command_for_playlist_list_window(
                 command,
                 &ui.search_filtered_items(&data.user_data.folder_playlists_items(folder_id))
                     .into_iter()
@@ -106,22 +166,28 @@ fn handle_command_for_library_page(
                     .collect::<Vec<_>>(),
                 &data,
                 ui,
-            )),
-            LibraryFocusState::SavedAlbums => window::handle_command_for_album_list_window(
+            ))
+        }
+        LibraryFocusState::SavedAlbums => {
+            // Use a read lock for the function call
+            let data = state.data.read();
+            window::handle_command_for_album_list_window(
                 command,
                 &ui.search_filtered_items(&data.user_data.saved_albums),
                 &data,
                 ui,
                 client_pub,
-            ),
-            LibraryFocusState::FollowedArtists => {
-                Ok(window::handle_command_for_artist_list_window(
-                    command,
-                    &ui.search_filtered_items(&data.user_data.followed_artists),
-                    &data,
-                    ui,
-                ))
-            }
+            )
+        }
+        LibraryFocusState::FollowedArtists => {
+            // Handle artist-specific commands
+            let data = state.data.read();
+            Ok(window::handle_command_for_artist_list_window(
+                command,
+                &ui.search_filtered_items(&data.user_data.followed_artists),
+                &data,
+                ui,
+            ))
         }
     }
 }
@@ -362,52 +428,51 @@ fn handle_command_for_browse_page(
         _ => anyhow::bail!("expect a browse page state"),
     };
 
+    let count = ui.count_prefix;
     let page_state = ui.current_page_mut();
     let selected = page_state.selected().unwrap_or_default();
     if selected >= len {
         return Ok(false);
     }
 
-    if handle_navigation_command(command, page_state, selected, len) {
+    if handle_navigation_command(command, page_state, selected, len, count) {
         return Ok(true);
     }
     match command {
-        Command::ChooseSelected => {
-            match page_state {
-                PageState::Browse { state } => match state {
-                    BrowsePageUIState::CategoryList { .. } => {
-                        let categories = ui.search_filtered_items(&data.browse.categories);
-                        client_pub.send(ClientRequest::GetBrowseCategoryPlaylists(
-                            categories[selected].clone(),
-                        ))?;
-                        ui.new_page(PageState::Browse {
-                            state: BrowsePageUIState::CategoryPlaylistList {
-                                category: categories[selected].clone(),
-                                state: ListState::default(),
-                            },
-                        });
-                    }
-                    BrowsePageUIState::CategoryPlaylistList { category, .. } => {
-                        let playlists =
-                            data.browse
-                                .category_playlists
-                                .get(&category.id)
-                                .context(format!(
-                                    "expect to have playlists data for {category} category"
-                                ))?;
-                        let context_id = ContextId::Playlist(
-                            ui.search_filtered_items(playlists)[selected].id.clone(),
-                        );
-                        ui.new_page(PageState::Context {
-                            id: None,
-                            context_page_type: ContextPageType::Browsing(context_id),
-                            state: None,
-                        });
-                    }
-                },
-                _ => anyhow::bail!("expect a browse page state"),
-            };
-        }
+        Command::ChooseSelected => match page_state {
+            PageState::Browse { state } => match state {
+                BrowsePageUIState::CategoryList { .. } => {
+                    let categories = ui.search_filtered_items(&data.browse.categories);
+                    client_pub.send(ClientRequest::GetBrowseCategoryPlaylists(
+                        categories[selected].clone(),
+                    ))?;
+                    ui.new_page(PageState::Browse {
+                        state: BrowsePageUIState::CategoryPlaylistList {
+                            category: categories[selected].clone(),
+                            state: ListState::default(),
+                        },
+                    });
+                }
+                BrowsePageUIState::CategoryPlaylistList { category, .. } => {
+                    let playlists =
+                        data.browse
+                            .category_playlists
+                            .get(&category.id)
+                            .context(format!(
+                                "expect to have playlists data for {category} category"
+                            ))?;
+                    let context_id = ContextId::Playlist(
+                        ui.search_filtered_items(playlists)[selected].id.clone(),
+                    );
+                    ui.new_page(PageState::Context {
+                        id: None,
+                        context_page_type: ContextPageType::Browsing(context_id),
+                        state: None,
+                    });
+                }
+            },
+            _ => anyhow::bail!("expect a browse page state"),
+        },
         Command::Search => {
             ui.new_search_popup();
         }
@@ -421,7 +486,8 @@ fn handle_command_for_queue_page(command: Command, ui: &mut UIStateGuard) -> boo
         PageState::Queue { scroll_offset } => *scroll_offset,
         _ => return false,
     };
-    handle_navigation_command(command, ui.current_page_mut(), scroll_offset, 10000)
+    let count = ui.count_prefix;
+    handle_navigation_command(command, ui.current_page_mut(), scroll_offset, 10000, count)
 }
 
 fn handle_command_for_command_help_page(command: Command, ui: &mut UIStateGuard) -> bool {
@@ -433,7 +499,8 @@ fn handle_command_for_command_help_page(command: Command, ui: &mut UIStateGuard)
         ui.new_search_popup();
         return true;
     }
-    handle_navigation_command(command, ui.current_page_mut(), scroll_offset, 10000)
+    let count = ui.count_prefix;
+    handle_navigation_command(command, ui.current_page_mut(), scroll_offset, 10000, count)
 }
 
 pub fn handle_navigation_command(
@@ -441,6 +508,7 @@ pub fn handle_navigation_command(
     page: &mut PageState,
     id: usize,
     len: usize,
+    count: Option<usize>,
 ) -> bool {
     if len == 0 {
         return false;
@@ -449,26 +517,25 @@ pub fn handle_navigation_command(
     let configs = config::get_config();
     match command {
         Command::SelectNextOrScrollDown => {
-            if id + 1 < len {
-                page.select(id + 1);
-            }
+            let offset = count.unwrap_or(1);
+            page.select(std::cmp::min(id + offset, len - 1));
             true
         }
         Command::SelectPreviousOrScrollUp => {
-            if id > 0 {
-                page.select(id - 1);
-            }
+            let offset = count.unwrap_or(1);
+            page.select(id.saturating_sub(offset));
             true
         }
         Command::PageSelectNextOrScrollDown => {
-            page.select(std::cmp::min(
-                id + configs.app_config.page_size_in_rows,
-                len - 1,
-            ));
+            let page_size = configs.app_config.page_size_in_rows;
+            let offset = count.unwrap_or(1) * page_size;
+            page.select(std::cmp::min(id + offset, len - 1));
             true
         }
         Command::PageSelectPreviousOrScrollUp => {
-            page.select(id.saturating_sub(configs.app_config.page_size_in_rows));
+            let page_size = configs.app_config.page_size_in_rows;
+            let offset = count.unwrap_or(1) * page_size;
+            page.select(id.saturating_sub(offset));
             true
         }
         Command::SelectLastOrScrollToBottom => {

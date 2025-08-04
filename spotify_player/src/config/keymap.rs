@@ -108,6 +108,10 @@ impl Default for KeymapConfig {
                     command: Command::AddSelectedItemToQueue,
                 },
                 Keymap {
+                    key_sequence: "C-g".into(),
+                    command: Command::JumpToHighlightTrackInContext,
+                },
+                Keymap {
                     key_sequence: "C-space".into(),
                     command: Command::ShowActionsOnSelectedItem,
                 },
@@ -299,6 +303,14 @@ impl Default for KeymapConfig {
                 Keymap {
                     key_sequence: "s r".into(),
                     command: Command::ReverseTrackOrder,
+                },
+                Keymap {
+                    key_sequence: "s l a".into(),
+                    command: Command::SortLibraryAlphabetically,
+                },
+                Keymap {
+                    key_sequence: "s l r".into(),
+                    command: Command::SortLibraryByRecent,
                 },
                 Keymap {
                     key_sequence: "C-k".into(),

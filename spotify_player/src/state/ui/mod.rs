@@ -18,7 +18,7 @@ pub use popup::*;
 #[cfg(feature = "image")]
 pub struct ImageRenderInfo {
     pub url: String,
-    pub render_area: tui::layout::Rect,
+    pub render_area: ratatui::layout::Rect,
     /// indicates if the image is rendered
     pub rendered: bool,
 }
@@ -36,7 +36,10 @@ pub struct UIState {
 
     /// The rectangle representing the playback progress bar,
     /// which is mainly used to handle mouse click events (for seeking command)
-    pub playback_progress_bar_rect: tui::layout::Rect,
+    pub playback_progress_bar_rect: ratatui::layout::Rect,
+
+    /// Count prefix for vim-style navigation (e.g., 5j, 10k)
+    pub count_prefix: Option<usize>,
 
     #[cfg(feature = "image")]
     pub last_cover_image_render_info: ImageRenderInfo,
@@ -116,7 +119,7 @@ impl UIState {
 
 #[cfg(feature = "fzf")]
 use fuzzy_matcher::skim::SkimMatcherV2;
-use tui::layout::Rect;
+use ratatui::layout::Rect;
 
 #[cfg(feature = "fzf")]
 fn fuzzy_search_items<'a, T: std::fmt::Display>(items: &'a [T], query: &str) -> Vec<&'a T> {
@@ -154,6 +157,8 @@ impl Default for UIState {
             popup: None,
 
             playback_progress_bar_rect: Rect::default(),
+
+            count_prefix: None,
 
             #[cfg(feature = "image")]
             last_cover_image_render_info: ImageRenderInfo::default(),
